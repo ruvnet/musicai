@@ -18,6 +18,9 @@ export enum AgentRole {
   OPTIMIZATION_AGENT = 'optimization_agent',
   INTEGRATION_AGENT = 'integration_agent',
   DEPLOYMENT_AGENT = 'deployment_agent',
+  DOCTOR = 'doctor',
+  STEM_MANAGER = 'stem_manager',
+  AUDIENCE = 'audience',
 }
 
 export enum AgentStatus {
@@ -90,4 +93,11 @@ export interface LearningPattern {
   context: Record<string, unknown>;
   feedback: number;
   timestamp: number;
+}
+
+export interface TaskResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+  metadata?: Record<string, any>;
 }

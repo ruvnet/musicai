@@ -19,6 +19,10 @@ export * from './factory/AgentFactory.js';
 export * from './integrations/AgentBooster.js';
 export * from './integrations/AgenticJujutsu.js';
 export * from './integrations/Ruvector.js';
+export * from './integrations/AgenticSynth.js';
+export * from './agents/DoctorAgent.js';
+export * from './agents/StemManagerAgent.js';
+export * from './agents/AudienceAgent.js';
 
 export class AgentSwarm {
   private orchestrator: AgentOrchestrator;
@@ -38,7 +42,7 @@ export class AgentSwarm {
   }
 
   public async initialize(): Promise<void> {
-    // Create and register all 15 agents
+    // Create and register all 18 agents (15 original + 3 new: Doctor, StemManager, Audience)
     const agents = AgentFactory.createAllAgents();
 
     for (const agent of agents) {
@@ -109,7 +113,7 @@ export class AgentSwarm {
 
 // Default configuration
 export const defaultConfig: SwarmConfig = {
-  maxConcurrentAgents: 15,
+  maxConcurrentAgents: 18,
   taskTimeout: 30000,
   retryAttempts: 3,
   enableLearning: true,

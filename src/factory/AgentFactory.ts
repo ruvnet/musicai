@@ -14,6 +14,9 @@ import { SimulationEngineAgent } from '../agents/SimulationEngineAgent.js';
 import { OptimizationAgent } from '../agents/OptimizationAgent.js';
 import { IntegrationAgent } from '../agents/IntegrationAgent.js';
 import { DeploymentAgent } from '../agents/DeploymentAgent.js';
+import { DoctorAgent } from '../agents/DoctorAgent.js';
+import { StemManagerAgent } from '../agents/StemManagerAgent.js';
+import { AudienceAgent } from '../agents/AudienceAgent.js';
 
 export class AgentFactory {
   public static createAgent(role: AgentRole): IAgent {
@@ -46,6 +49,12 @@ export class AgentFactory {
         return new IntegrationAgent();
       case AgentRole.DEPLOYMENT_AGENT:
         return new DeploymentAgent();
+      case AgentRole.DOCTOR:
+        return new DoctorAgent();
+      case AgentRole.STEM_MANAGER:
+        return new StemManagerAgent();
+      case AgentRole.AUDIENCE:
+        return new AudienceAgent();
       default:
         throw new Error(`Unknown agent role: ${role}`);
     }
@@ -67,6 +76,9 @@ export class AgentFactory {
       AgentRole.OPTIMIZATION_AGENT,
       AgentRole.INTEGRATION_AGENT,
       AgentRole.DEPLOYMENT_AGENT,
+      AgentRole.DOCTOR,
+      AgentRole.STEM_MANAGER,
+      AgentRole.AUDIENCE,
     ].map((role) => this.createAgent(role));
   }
 }

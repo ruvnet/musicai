@@ -86,4 +86,17 @@ export abstract class BaseAgent extends EventEmitter implements IAgent {
     const total = this.metrics.averageExecutionTime * (this.metrics.successCount - 1);
     this.metrics.averageExecutionTime = (total + executionTime) / this.metrics.successCount;
   }
+
+  protected recordMetric(_metricName: string, _value: number): void {
+    // Stub method for recording custom metrics
+    // Can be extended for specific metric tracking
+  }
+
+  public getMetrics(): AgentMetrics {
+    return this.metrics;
+  }
+
+  public async executeTask(task: AgentTask): Promise<unknown> {
+    return this.execute(task);
+  }
 }
