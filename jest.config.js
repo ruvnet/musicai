@@ -1,20 +1,16 @@
 export default {
-  preset: 'ts-jest/presets/default-esm',
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^p-queue$': '<rootDir>/src/__mocks__/p-queue.ts',
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(p-queue|eventemitter3)/)',
-  ],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        useESM: true,
         tsconfig: {
-          module: 'ES2022',
+          module: 'commonjs',
           target: 'ES2022',
         },
       },

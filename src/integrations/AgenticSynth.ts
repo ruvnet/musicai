@@ -355,8 +355,8 @@ export class AgenticSynth {
    */
   private scoreGoal(
     params: Record<string, number>,
-    targets: Record<string, number>,
-    goal: OptimizationGoal
+    _targets: Record<string, number>,
+    _goal: OptimizationGoal
   ): number {
     // Simplified scoring - in production would use actual audio analysis
     let score = 0.7 + Math.random() * 0.2;
@@ -472,7 +472,7 @@ export class AgenticSynth {
   /**
    * Get default suggestions
    */
-  private getDefaultSuggestions(genre?: string): any {
+  private getDefaultSuggestions(_genre?: string): any {
     return {
       parameters: this.getInitialParameters(),
       confidence: 0.5,
@@ -484,7 +484,7 @@ export class AgenticSynth {
   /**
    * Calculate spectral centroid (simplified)
    */
-  private calculateSpectralCentroid(audioBuffer: Float32Array): number {
+  private calculateSpectralCentroid(_audioBuffer: Float32Array): number {
     // Simplified calculation - in production would use FFT
     return 1500 + Math.random() * 500;
   }
@@ -492,7 +492,7 @@ export class AgenticSynth {
   /**
    * Calculate spectral flux (simplified)
    */
-  private calculateSpectralFlux(audioBuffer: Float32Array): number {
+  private calculateSpectralFlux(_audioBuffer: Float32Array): number {
     // Simplified calculation - in production would use FFT
     return 0.4 + Math.random() * 0.3;
   }

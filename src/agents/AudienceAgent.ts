@@ -107,7 +107,6 @@ export class AudienceAgent extends BaseAgent {
   private async simulateListener(payload: any): Promise<any> {
     const {
       personaType = 'casual',
-      audioBuffer,
       genre,
     } = payload;
 
@@ -129,7 +128,6 @@ export class AudienceAgent extends BaseAgent {
    */
   private async getFeedback(payload: any): Promise<any> {
     const {
-      audioBuffer,
       genre,
       listenerCount = 100,
       listenerTypes = ['casual', 'audiophile', 'producer', 'musician', 'dj'],
@@ -170,8 +168,6 @@ export class AudienceAgent extends BaseAgent {
    */
   private async performABTest(payload: any): Promise<any> {
     const {
-      versionA,
-      versionB,
       listenerCount = 100,
       genre,
     } = payload;
@@ -231,11 +227,7 @@ export class AudienceAgent extends BaseAgent {
   /**
    * Analyze listener preferences
    */
-  private async analyzePreferences(payload: any): Promise<any> {
-    const {
-      feedbackHistory = [],
-      genre,
-    } = payload;
+  private async analyzePreferences(_payload: any): Promise<any> {
 
     return {
       success: true,
@@ -272,7 +264,6 @@ export class AudienceAgent extends BaseAgent {
   private async simulateEnvironment(payload: any): Promise<any> {
     const {
       environment = 'studio',
-      audioBuffer,
     } = payload;
 
     const environments: Record<string, any> = {
@@ -344,8 +335,6 @@ export class AudienceAgent extends BaseAgent {
    */
   private async getCrowdConsensus(payload: any): Promise<any> {
     const {
-      audioBuffer,
-      genre,
       sampleSize = 1000,
     } = payload;
 
@@ -379,8 +368,6 @@ export class AudienceAgent extends BaseAgent {
    */
   private async predictRating(payload: any): Promise<any> {
     const {
-      audioBuffer,
-      genre,
       targetAudience = 'general',
     } = payload;
 
@@ -479,7 +466,7 @@ export class AudienceAgent extends BaseAgent {
     return Math.min(5, Math.max(1, baseRating * (1 - profile.criticalness * 0.2)));
   }
 
-  private generateComments(profile: any, _genre: string): string[] {
+  private generateComments(_profile: any, _genre: string): string[] {
     const comments = [
       'Great energy and production',
       'Could use more clarity in the mix',
@@ -491,7 +478,7 @@ export class AudienceAgent extends BaseAgent {
     return comments.slice(0, 2 + Math.floor(Math.random() * 2));
   }
 
-  private generateComment(profile: any, rating: number): string {
+  private generateComment(_profile: any, rating: number): string {
     if (rating > 4.0) {
       return 'Excellent production quality and enjoyable listen';
     } else if (rating > 3.0) {
@@ -505,7 +492,7 @@ export class AudienceAgent extends BaseAgent {
     return profile.priorities.slice(0, 2);
   }
 
-  private getSuggestedImprovements(profile: any): string[] {
+  private getSuggestedImprovements(_profile: any): string[] {
     return ['Consider enhancing clarity', 'Adjust bass levels'];
   }
 
@@ -570,8 +557,8 @@ export class AudienceAgent extends BaseAgent {
   private generateABRecommendation(
     winner: string,
     confidence: number,
-    avgA: number,
-    avgB: number
+    _avgA: number,
+    _avgB: number
   ): string {
     if (confidence < 0.05) {
       return 'Difference is minimal - either version would work well';
