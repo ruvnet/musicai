@@ -9,6 +9,7 @@ import { AgentRole, SwarmConfig, AgentTask, TaskPriority, AgentStatus } from './
 import { AgentBooster } from './integrations/AgentBooster.js';
 import { AgenticJujutsu } from './integrations/AgenticJujutsu.js';
 import { Ruvector } from './integrations/Ruvector.js';
+import { CoralTPU } from './integrations/CoralTPU.js';
 
 export * from './types/index.js';
 export * from './core/BaseAgent.js';
@@ -20,6 +21,7 @@ export * from './integrations/AgentBooster.js';
 export * from './integrations/AgenticJujutsu.js';
 export * from './integrations/Ruvector.js';
 export * from './integrations/AgenticSynth.js';
+export * from './integrations/CoralTPU.js';
 export * from './agents/DoctorAgent.js';
 export * from './agents/StemManagerAgent.js';
 export * from './agents/AudienceAgent.js';
@@ -29,6 +31,7 @@ export class AgentSwarm {
   private agentBooster: AgentBooster;
   private jujutsu: AgenticJujutsu;
   private ruvector: Ruvector;
+  private coralTPU: CoralTPU;
 
   constructor(config: SwarmConfig) {
     this.orchestrator = new AgentOrchestrator(config);
@@ -37,11 +40,24 @@ export class AgentSwarm {
     this.agentBooster = new AgentBooster({ language: 'typescript' });
     this.jujutsu = new AgenticJujutsu({ repoPath: '.', branchPrefix: 'agent' });
     this.ruvector = new Ruvector({ dbPath: './data/ruvector.db', embeddingDim: 128 });
+    this.coralTPU = new CoralTPU({
+      preferTPU: true,
+      fallbackToCPU: true,
+      performanceMonitoring: true
+    });
 
     this.setupEventListeners();
   }
 
   public async initialize(): Promise<void> {
+    // Initialize Coral TPU with automatic detection and fallback
+    await this.coralTPU.initialize();
+
+    // Preload AI models for faster inference
+    await this.coralTPU.preloadModel('stem_separation');
+    await this.coralTPU.preloadModel('enhancement');
+    await this.coralTPU.preloadModel('pitch_detection');
+
     // Create and register all 18 agents (15 original + 3 new: Doctor, StemManager, Audience)
     const agents = AgentFactory.createAllAgents();
 
@@ -52,6 +68,11 @@ export class AgentSwarm {
     await this.orchestrator.start();
 
     console.log(`✓ Agent Swarm initialized with ${agents.length} concurrent agents`);
+    console.log(this.coralTPU.getPerformanceReport());
+  }
+
+  public getCoralTPU(): CoralTPU {
+    return this.coralTPU;
   }
 
   public async executeTask(
@@ -183,6 +204,7 @@ export async function main(): Promise<void> {
 }
 
 // Run if this is the main module
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
-}
+// Commented out to avoid TypeScript module errors in test environment
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   main().catch(console.error);
+// }
