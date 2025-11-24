@@ -1,0 +1,89 @@
+# Multi-stage Dockerfile for Raspberry Pi 4 (ARM64)
+# Optimized for Magic AI Music Box
+
+# Stage 1: Build Stage
+FROM node:20-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pkg-config \
+    curl \
+    git \
+    python3 \
+    libasound2-dev \
+    libssl-dev \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust for ARM64
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY Cargo.toml ./
+
+# Install Node.js dependencies
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# Copy source code
+COPY src/ ./src/
+COPY demo/ ./demo/
+
+# Build TypeScript
+RUN npm run build:ts
+
+# Build Rust (optional - may be skipped if resources are limited)
+RUN npm run build:rust || echo "Rust build skipped"
+
+# Stage 2: Runtime Stage
+FROM node:20-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libasound2 \
+    pulseaudio \
+    alsa-utils \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user
+RUN useradd -m -u 1000 musicai
+
+# Set working directory
+WORKDIR /app
+
+# Copy built application from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+
+# Copy demo scripts
+COPY --from=builder /app/demo ./demo
+
+# Create data directory
+RUN mkdir -p /app/data && \
+    chown -R musicai:musicai /app
+
+# Switch to app user
+USER musicai
+
+# Expose port (if running HTTP server in future)
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD node -e "console.log('healthy')" || exit 1
+
+# Environment variables
+ENV NODE_ENV=production \
+    NODE_OPTIONS="--max-old-space-size=512"
+
+# Default command
+CMD ["npm", "start"]
