@@ -30,6 +30,8 @@
     "test:integration": "jest --testPathPattern=integration",
     "demo": "npm run build:ts && npx tsx demo/full-system-demo.ts",
     "benchmark": "npm run build:ts && npx tsx demo/benchmark.ts",
+    "benchmark:comprehensive": "npm run build:ts && npx tsx demo/comprehensive-audio-benchmark.ts",
+    "benchmark:audio": "npm run build:ts && npx tsx demo/real-audio-test.ts",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src/**/*.ts",
