@@ -9,7 +9,7 @@ pub fn calculate_amplitude(buffer: &[f32]) -> f64 {
     }
 
     let sum: f32 = buffer.iter().map(|&x| x * x).sum();
-    ((sum / buffer.len() as f32).sqrt() as f64)
+    (sum / buffer.len() as f32).sqrt() as f64
 }
 
 /// Calculate Signal-to-Noise Ratio

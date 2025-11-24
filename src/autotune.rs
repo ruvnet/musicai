@@ -3,7 +3,7 @@
  */
 
 use crate::AudioConfig;
-use std::f64::consts::PI;
+
 
 pub struct AutotuneEngine {
     config: AudioConfig,

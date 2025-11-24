@@ -88,8 +88,9 @@ impl MusicAIProcessor {
 
     /// Detect pitch from audio buffer
     #[napi]
-    pub fn detect_pitch(&self, audio_buffer: Vec<f32>) -> Result<PitchResult> {
-        let result = self.pitch_detector.detect(&audio_buffer)
+    pub fn detect_pitch(&self, audio_buffer: Float32Array) -> Result<PitchResult> {
+        let buffer: Vec<f32> = audio_buffer.to_vec();
+        let result = self.pitch_detector.detect(&buffer)
             .map_err(|e| Error::from_reason(format!("Pitch detection failed: {}", e)))?;
 
         Ok(PitchResult {
@@ -103,24 +104,28 @@ impl MusicAIProcessor {
     #[napi]
     pub fn apply_autotune(
         &mut self,
-        audio_buffer: Vec<f32>,
+        audio_buffer: Float32Array,
         target_pitch: f64,
         strength: f64,
-    ) -> Result<Vec<f32>> {
-        self.autotune_engine
-            .process(&audio_buffer, target_pitch, strength)
-            .map_err(|e| Error::from_reason(format!("Auto-tune failed: {}", e)))
+    ) -> Result<Float32Array> {
+        let buffer: Vec<f32> = audio_buffer.to_vec();
+        let result = self.autotune_engine
+            .process(&buffer, target_pitch, strength)
+            .map_err(|e| Error::from_reason(format!("Auto-tune failed: {}", e)))?;
+
+        Ok(Float32Array::new(result))
     }
 
     /// Analyze audio buffer
     #[napi]
-    pub fn analyze_audio(&self, audio_buffer: Vec<f32>) -> Result<AudioAnalysis> {
-        let pitch_result = self.pitch_detector.detect(&audio_buffer)
+    pub fn analyze_audio(&self, audio_buffer: Float32Array) -> Result<AudioAnalysis> {
+        let buffer: Vec<f32> = audio_buffer.to_vec();
+        let pitch_result = self.pitch_detector.detect(&buffer)
             .map_err(|e| Error::from_reason(format!("Analysis failed: {}", e)))?;
 
-        let amplitude = audio::calculate_amplitude(&audio_buffer);
-        let quality_score = self.calculate_quality(&audio_buffer);
-        let features = self.extract_features(&audio_buffer);
+        let amplitude = audio::calculate_amplitude(&buffer);
+        let quality_score = self.calculate_quality(&buffer);
+        let features = self.extract_features(&buffer);
 
         Ok(AudioAnalysis {
             pitch: pitch_result.frequency,
@@ -134,9 +139,9 @@ impl MusicAIProcessor {
     #[napi]
     pub async unsafe fn process_realtime(
         &mut self,
-        audio_buffer: Vec<f32>,
+        audio_buffer: Float32Array,
         options: ProcessOptions,
-    ) -> Result<Vec<f32>> {
+    ) -> Result<Float32Array> {
         // Detect pitch
         let pitch = self.detect_pitch(audio_buffer.clone())?;
 
@@ -156,12 +161,12 @@ impl MusicAIProcessor {
         (snr / 40.0).min(1.0)
     }
 
-    fn extract_features(&self, buffer: &[f32]) -> Vec<f64> {
+    fn extract_features(&self, _buffer: &[f32]) -> Vec<f64> {
         // Extract MFCC-like features (simplified)
         vec![0.0; 128]
     }
 
-    fn snap_to_scale(&self, freq: f64, scale: &str, key: &str) -> f64 {
+    fn snap_to_scale(&self, freq: f64, _scale: &str, _key: &str) -> f64 {
         // Simplified scale snapping
         freq
     }

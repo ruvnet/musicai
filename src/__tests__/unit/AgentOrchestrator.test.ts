@@ -1,5 +1,17 @@
+// Mock p-queue before imports
+jest.mock('p-queue', () => {
+  return {
+    __esModule: true,
+    default: class MockPQueue {
+      add = jest.fn().mockResolvedValue(undefined);
+      clear = jest.fn();
+      size = 0;
+    },
+  };
+});
+
 import { AgentOrchestrator } from '../../core/AgentOrchestrator.js';
-import { BaseAgent, IAgent } from '../../core/BaseAgent.js';
+import { BaseAgent } from '../../core/BaseAgent.js';
 import {
   AgentRole,
   AgentTask,
@@ -15,11 +27,11 @@ class MockAgent extends BaseAgent {
     super(role, []);
   }
 
-  protected async processTask(task: AgentTask): Promise<unknown> {
+  protected async processTask(_task: AgentTask): Promise<unknown> {
     return { success: true };
   }
 
-  protected async processMessage(message: AgentMessage): Promise<void> {
+  protected async processMessage(_message: AgentMessage): Promise<void> {
     return;
   }
 }

@@ -28,6 +28,8 @@
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
+    "demo": "npm run build:ts && npx tsx demo/full-system-demo.ts",
+    "benchmark": "npm run build:ts && npx tsx demo/benchmark.ts",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src/**/*.ts",
