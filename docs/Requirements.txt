@@ -1,0 +1,367 @@
+# Magic AI Music Box - Complete Requirements
+
+## Hardware Requirements & Shopping List
+
+### Core Components (Required)
+
+|Component              |Specification                |Estimated Cost|Where to Buy           |Notes                        |
+|-----------------------|-----------------------------|--------------|-----------------------|-----------------------------|
+|**Raspberry Pi 4**     |4GB RAM (8GB recommended)    |$55-75        |raspberrypi.com, Amazon|8GB preferred for AI features|
+|**USB Audio Interface**|48kHz/24-bit, class-compliant|$30-100       |Amazon, B&H Photo      |See recommendations below    |
+|**MicroSD Card**       |32GB+, Class 10, A2 rating   |$10-15        |Amazon                 |For OS and base storage      |
+|**Power Supply**       |5V/3A USB-C, official RPi    |$8-12         |raspberrypi.com        |Critical for stability       |
+|**Cooling Solution**   |Active fan + heatsink        |$15-40        |Amazon                 |Required for sustained DSP   |
+
+**Total Core Cost: $118-242**
+
+### Recommended Upgrades
+
+|Component                  |Specification               |Estimated Cost|Purpose                       |
+|---------------------------|----------------------------|--------------|------------------------------|
+|**NVMe SSD**               |128GB M.2 NVMe              |$20-30        |Fast storage for learning data|
+|**M.2 HAT or Case**        |Argon ONE M.2 or similar    |$25-35        |Houses SSD with cooling       |
+|**Quality Audio Interface**|Focusrite Scarlett Solo     |$120          |Professional audio quality    |
+|**Rotary Encoders**        |2x rotary encoders with GPIO|$15           |Physical parameter control    |
+|**Display**                |3.5” TFT LCD (SPI)          |$20-30        |Standalone monitoring         |
+
+**Total with Upgrades: $318-502**
+
+### Audio Interface Recommendations
+
+#### Budget Option ($30-50)
+
+- **Behringer UCA222**:
+  - Pros: Cheap, reliable, class-compliant
+  - Cons: Basic preamps, no direct monitoring
+  - Best for: Testing, basic use
+
+#### Mid-Range ($80-120)
+
+- **Focusrite Scarlett Solo (3rd Gen)**:
+  - Pros: Excellent preamps, low latency, USB bus powered
+  - Cons: More expensive
+  - Best for: Serious use, quality recordings
+
+#### Professional ($150+)
+
+- **Universal Audio Volt 2**:
+  - Pros: Best-in-class preamps, vintage mode
+  - Cons: Overkill for most use cases
+  - Best for: Studio quality
+
+### Cable & Accessories
+
+|Item                   |Quantity|Cost       |Notes                         |
+|-----------------------|--------|-----------|------------------------------|
+|XLR Microphone Cable   |1-2     |$10-15 each|6-10ft recommended            |
+|1/4” TRS Cable         |1-2     |$8-12 each |For monitors/headphones       |
+|USB Cable (Type-A to B)|1       |$5-8       |If not included with interface|
+|Microphone             |1       |$50-300    |Dynamic (SM58) or Condenser   |
+|Headphones             |1       |$50-200    |For monitoring                |
+
+## Software Dependencies
+
+### Operating System
+
+- **Raspberry Pi OS 64-bit** (Bookworm or later)
+- Kernel 5.15+ recommended
+- Desktop or Lite edition both work
+
+### System Packages
+
+```bash
+# Core audio
+libasound2-dev
+alsa-utils
+
+# Build tools
+build-essential
+pkg-config
+git
+
+# ML acceleration (optional)
+libopenblas-dev
+
+# Python (for model training)
+python3-pip
+python3-venv
+```
+
+### Rust Ecosystem
+
+|Crate      |Version|Purpose                 |Optional                |
+|-----------|-------|------------------------|------------------------|
+|cpal       |0.15   |Cross-platform audio I/O|Required                |
+|rustfft    |6.1    |FFT operations          |Required                |
+|hound      |3.5    |WAV file I/O            |Dev/Test                |
+|tract-onnx |0.21   |Neural network inference|Yes (–features ml)      |
+|ndarray    |0.15   |N-dimensional arrays    |Required                |
+|rayon      |1.8    |Data parallelism        |Required                |
+|crossbeam  |0.8    |Lock-free structures    |Required                |
+|parking_lot|0.12   |Fast mutexes            |Required                |
+|tokio      |1.35   |Async runtime           |Yes (–features web)     |
+|axum       |0.7    |Web framework           |Yes (–features web)     |
+|rppal      |0.17   |Raspberry Pi GPIO       |Yes (–features hardware)|
+|clap       |4.4    |CLI parsing             |Required                |
+|serde      |1.0    |Serialization           |Required                |
+|tracing    |0.1    |Logging                 |Required                |
+
+### Python Packages (for AI model development)
+
+```bash
+pip3 install torch torchvision torchaudio  # PyTorch
+pip3 install onnx onnxruntime              # Model export
+pip3 install librosa soundfile             # Audio processing
+pip3 install numpy scipy                   # Scientific computing
+pip3 install matplotlib seaborn            # Visualization
+```
+
+## Performance Requirements
+
+### Minimum Specifications
+
+|Resource   |Requirement          |Verification            |
+|-----------|---------------------|------------------------|
+|**CPU**    |ARM Cortex-A72 (RPi4)|`cat /proc/cpuinfo`     |
+|**RAM**    |4GB                  |`free -h`               |
+|**Storage**|16GB free            |`df -h`                 |
+|**Audio**  |48kHz/24-bit capable |`cat /proc/asound/cards`|
+|**Latency**|<15ms achievable     |Config dependent        |
+
+### Recommended Specifications
+
+|Resource   |Recommendation       |Why                      |
+|-----------|---------------------|-------------------------|
+|**CPU**    |RPi 4 @ 1.5GHz       |Default clock speed      |
+|**RAM**    |8GB                  |Better for AI features   |
+|**Storage**|128GB NVMe SSD       |Fast I/O for learning    |
+|**Audio**  |Focusrite Scarlett   |Low latency, good quality|
+|**Cooling**|Active fan + heatsink|Sustained performance    |
+
+### Performance Targets
+
+|Metric                |Target      |Measured How            |
+|----------------------|------------|------------------------|
+|**End-to-end latency**|<10ms       |Verbose mode output     |
+|**CPU usage**         |<60% avg    |`htop` during use       |
+|**Memory footprint**  |<512MB      |`ps aux`                |
+|**Storage (patterns)**|<1GB        |`du -sh data/`          |
+|**Pitch accuracy**    |>99%        |Testing with known tones|
+|**Uptime**            |24/7 capable|System stability        |
+
+## System Configuration Requirements
+
+### Audio System
+
+```bash
+# /etc/asound.conf (ALSA configuration)
+pcm.!default {
+    type hw
+    card 1  # Your USB audio interface card number
+}
+
+ctl.!default {
+    type hw
+    card 1
+}
+```
+
+### Real-time Priority
+
+```bash
+# /etc/security/limits.conf
+@audio - rtprio 99
+@audio - memlock unlimited
+@audio - nice -19
+```
+
+### CPU Governor
+
+```bash
+# /etc/rc.local (add before exit 0)
+echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+### GPU Memory Reduction
+
+```bash
+# /boot/config.txt
+gpu_mem=16  # Minimum for headless operation
+```
+
+### Swap Configuration
+
+```bash
+# Disable swap for real-time audio (optional)
+sudo dphys-swapfile swapoff
+sudo dphys-swapfile uninstall
+sudo systemctl disable dphys-swapfile
+```
+
+## Network Requirements
+
+### For Development
+
+- SSH access (port 22)
+- Git access (port 443)
+- Package manager access (various ports)
+
+### For Web UI (Optional)
+
+- HTTP/WebSocket (port 8080 default)
+- Bonjour/mDNS for discovery
+
+### Bandwidth
+
+- Negligible - all processing is local
+- Internet only needed for initial setup
+
+## Storage Requirements
+
+### Base Installation
+
+- Raspberry Pi OS: ~6GB
+- Rust toolchain: ~2GB
+- Build artifacts: ~1GB
+- Binary: ~10MB
+
+### Runtime Storage
+
+- Configuration: <1MB
+- Learning patterns: 100MB-1GB (grows over time)
+- Logs: 10-100MB (rotated)
+- AI models: 50-200MB (optional)
+
+**Total: 10-15GB minimum, 20-30GB recommended**
+
+## Development Environment Requirements
+
+### Cross-compilation (Optional)
+
+```bash
+# On x86_64 Linux/Mac
+rustup target add aarch64-unknown-linux-gnu
+
+# Linux linker
+sudo apt install gcc-aarch64-linux-gnu
+
+# Add to .cargo/config.toml
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+```
+
+### Testing Tools
+
+```bash
+# Audio testing
+sudo apt install audacity sox
+
+# Performance profiling
+sudo apt install perf-tools-unstable
+
+# Network testing (for web UI)
+sudo apt install curl netcat-openbsd
+```
+
+## Timeline Estimates
+
+### Initial Setup (First Time)
+
+- OS installation: 30 minutes
+- System configuration: 30 minutes
+- Rust installation: 10 minutes
+- Dependency installation: 15 minutes
+- **Total: ~1.5 hours**
+
+### Build & Deployment
+
+- Clone repository: 2 minutes
+- Build (native on RPi4): 10-15 minutes
+- Build (cross-compile): 5-8 minutes
+- Configuration: 5 minutes
+- Testing: 10 minutes
+- **Total: ~30 minutes (after first setup)**
+
+### Development Iteration
+
+- Code changes: varies
+- Rebuild: 2-10 minutes (depending on changes)
+- Deploy & test: 5 minutes
+- **Iteration cycle: ~10-20 minutes**
+
+## Budget Breakdown
+
+### Minimal Setup
+
+- Raspberry Pi 4 (4GB): $55
+- Budget USB audio: $30
+- microSD card: $10
+- Power supply: $8
+- Basic cooling: $15
+- Cables: $20
+  **Total: $138**
+
+### Recommended Setup
+
+- Raspberry Pi 4 (8GB): $75
+- Focusrite Scarlett Solo: $120
+- microSD card: $15
+- Power supply (official): $12
+- Argon ONE case: $35
+- Quality cables: $30
+  **Total: $287**
+
+### Professional Setup
+
+- Raspberry Pi 4 (8GB): $75
+- UA Volt 2 interface: $190
+- 128GB NVMe SSD: $25
+- Argon ONE M.2 case: $40
+- Quality microphone (SM58): $100
+- Studio headphones: $150
+- Professional cables: $50
+  **Total: $630**
+
+## Pre-flight Checklist
+
+Before starting, verify you have:
+
+- [ ] Raspberry Pi 4 (4GB+ RAM)
+- [ ] USB audio interface (48kHz capable)
+- [ ] microSD card (32GB+, Class 10)
+- [ ] Power supply (5V/3A USB-C)
+- [ ] Cooling solution installed
+- [ ] Raspberry Pi OS 64-bit installed
+- [ ] Internet connection available
+- [ ] Microphone & headphones/speakers
+- [ ] XLR/TRS cables as needed
+- [ ] 2+ hours for initial setup
+
+## Optional Enhancements
+
+### For Live Performance
+
+- [ ] Physical control knobs (GPIO encoders)
+- [ ] LED status indicators
+- [ ] Foot pedal for enable/disable
+- [ ] Backup power supply (UPS)
+
+### For Studio Use
+
+- [ ] MIDI controller integration
+- [ ] DAW integration (via JACK)
+- [ ] Multi-track recording
+- [ ] Professional monitoring
+
+### For Development
+
+- [ ] Debugger/probe
+- [ ] Serial console access
+- [ ] Test signal generator
+- [ ] Oscilloscope (for latency measurement)
+
+-----
+
+**Ready to build?** Start with the [Quick Start Guide](QUICKSTART.md)!
+
+**Questions?** Check the [main README](README.md) or open an issue.
