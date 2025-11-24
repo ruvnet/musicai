@@ -12,7 +12,6 @@
 import { BaseAgent } from '../core/BaseAgent.js';
 import { AgentRole, AgentTask, AgentMessage } from '../types/index.js';
 import { AudioIOConfig, AudioBuffer } from '../types/mixer.js';
-import EventEmitter from 'eventemitter3';
 
 export class AudioIOAgent extends BaseAgent {
   private ioConfig: AudioIOConfig;

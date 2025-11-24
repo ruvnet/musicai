@@ -10,7 +10,7 @@ export default class PQueue {
     this.concurrency = options?.concurrency || Infinity;
   }
 
-  async add<T>(fn: () => Promise<T>, options?: { priority?: number }): Promise<T> {
+  async add<T>(fn: () => Promise<T>, _options?: { priority?: number }): Promise<T> {
     // Simple implementation: just run immediately if under concurrency
     if (this.running < this.concurrency) {
       this.running++;
