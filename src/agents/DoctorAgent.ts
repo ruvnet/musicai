@@ -94,7 +94,7 @@ export class DoctorAgent extends BaseAgent {
   /**
    * Check overall system health
    */
-  private async checkSystemHealth(payload: any): Promise<any> {
+  private async checkSystemHealth(_payload: any): Promise<any> {
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -156,7 +156,7 @@ export class DoctorAgent extends BaseAgent {
   /**
    * Check audio devices configuration
    */
-  private async checkAudioDevices(payload: any): Promise<any> {
+  private async checkAudioDevices(_payload: any): Promise<any> {
     return {
       status: 'ok',
       devices: {

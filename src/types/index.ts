@@ -21,6 +21,9 @@ export enum AgentRole {
   DOCTOR = 'doctor',
   STEM_MANAGER = 'stem_manager',
   AUDIENCE = 'audience',
+  AUDIO_IO = 'audio_io',
+  MIXER = 'mixer',
+  MONITORING = 'monitoring',
 }
 
 export enum AgentStatus {
