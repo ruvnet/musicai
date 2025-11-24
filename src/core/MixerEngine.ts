@@ -32,6 +32,10 @@ export class MixerEngine extends EventEmitter {
   private isProcessing: boolean;
   private currentTime: number;
 
+  // Buffer pool for zero-allocation processing
+  private outputBufferPool: Float32Array[];
+  private currentPoolIndex: number;
+
   constructor(config: MixerConfig) {
     super();
     this.config = config;
@@ -52,6 +56,15 @@ export class MixerEngine extends EventEmitter {
     };
     this.isProcessing = false;
     this.currentTime = 0;
+
+    // Pre-allocate buffer pool (double buffering)
+    this.outputBufferPool = [
+      new Float32Array(config.blockSize),
+      new Float32Array(config.blockSize),
+      new Float32Array(config.blockSize),
+      new Float32Array(config.blockSize),
+    ];
+    this.currentPoolIndex = 0;
 
     // Create master channel
     this.masterChannel = new ChannelStrip({
@@ -119,6 +132,29 @@ export class MixerEngine extends EventEmitter {
       channels: this.channels.size,
       auxChannels: this.auxChannels.size,
     });
+
+    // Warmup: Process dummy blocks to pre-allocate and JIT compile
+    this.warmup();
+  }
+
+  /**
+   * Warmup processing to prevent first-run allocation spikes
+   */
+  private warmup(): void {
+    const dummyInput: AudioBuffer = {
+      samples: Array(this.config.channels).fill(null).map(() => new Float32Array(this.config.blockSize)),
+      channels: this.config.channels,
+      sampleRate: this.config.sampleRate,
+      blockSize: this.config.blockSize,
+    };
+
+    // Process 3 dummy blocks to warmup JIT and allocate buffers
+    for (let i = 0; i < 3; i++) {
+      this.processBlock(dummyInput);
+    }
+
+    // Reset metrics after warmup
+    this.reset();
   }
 
   /**
@@ -127,18 +163,24 @@ export class MixerEngine extends EventEmitter {
   processBlock(inputs: AudioBuffer): AudioBuffer {
     const startTime = performance.now();
 
-    // Create output buffer
+    // Reuse output buffers from pool (zero-allocation)
+    const leftBuffer = this.outputBufferPool[this.currentPoolIndex];
+    const rightBuffer = this.outputBufferPool[this.currentPoolIndex + 1];
+    this.currentPoolIndex = (this.currentPoolIndex + 2) % (this.outputBufferPool.length - 1);
+
+    // Clear buffers
+    leftBuffer.fill(0);
+    rightBuffer.fill(0);
+
+    // Create output buffer reference
     const output: AudioBuffer = {
-      samples: [
-        new Float32Array(this.config.blockSize),
-        new Float32Array(this.config.blockSize),
-      ],
+      samples: [leftBuffer, rightBuffer],
       channels: 2,
       sampleRate: this.config.sampleRate,
       blockSize: this.config.blockSize,
     };
 
-    // Check solo状态
+    // Check solo状态 (optimized: cache result)
     const hasSolo = Array.from(this.channels.values()).some((ch) => ch.isSolo());
 
     // Process each input channel
@@ -199,36 +241,46 @@ export class MixerEngine extends EventEmitter {
   }
 
   /**
-   * Route channel output to destination(s)
+   * Route channel output to destination(s) - Optimized
    */
   private routeChannel(input: AudioBuffer, output: AudioBuffer, channel: ChannelStrip): void {
     const routeConfig = channel.getRoute();
+    const blockSize = this.config.blockSize;
+    const inputLeft = input.samples[0];
+    const inputRight = input.samples.length > 1 ? input.samples[1] : inputLeft;
 
     // Route to master output
     if (routeConfig.outputs.length === 0) {
-      // Default: route to master stereo
-      for (let i = 0; i < this.config.blockSize; i++) {
-        output.samples[0][i] += input.samples[0][i];
-        output.samples[1][i] += input.samples.length > 1 ? input.samples[1][i] : input.samples[0][i];
+      // Default: route to master stereo (optimized loop)
+      const outLeft = output.samples[0];
+      const outRight = output.samples[1];
+
+      for (let i = 0; i < blockSize; i++) {
+        outLeft[i] += inputLeft[i];
+        outRight[i] += inputRight[i];
       }
     } else {
-      // Custom routing
+      // Custom routing (cache output arrays)
+      const outputSamples = output.samples;
       routeConfig.outputs.forEach((outIdx) => {
         if (outIdx < output.channels) {
-          for (let i = 0; i < this.config.blockSize; i++) {
-            output.samples[outIdx][i] += input.samples[0][i];
+          const outChannel = outputSamples[outIdx];
+          for (let i = 0; i < blockSize; i++) {
+            outChannel[i] += inputLeft[i];
           }
         }
       });
     }
 
-    // Process sends to aux channels
-    routeConfig.sends.forEach((send) => {
-      const auxChannel = this.auxChannels.get(send.destination);
-      if (auxChannel) {
-        auxChannel.addSendInput(input, send.amount);
-      }
-    });
+    // Process sends to aux channels (pre-check length)
+    if (routeConfig.sends.length > 0) {
+      routeConfig.sends.forEach((send) => {
+        const auxChannel = this.auxChannels.get(send.destination);
+        if (auxChannel) {
+          auxChannel.addSendInput(input, send.amount);
+        }
+      });
+    }
   }
 
   /**

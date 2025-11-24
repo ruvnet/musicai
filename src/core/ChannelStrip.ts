@@ -19,6 +19,11 @@ export class ChannelStrip {
   private peakLevel: number;
   private rmsLevel: number;
 
+  // Pre-allocated buffers for zero-allocation processing
+  private workBufferL: Float32Array;
+  private workBufferR: Float32Array;
+  private tempBuffer: Float32Array;
+
   constructor(config: ChannelConfig, sampleRate: number, blockSize: number) {
     this.config = config;
     this.sampleRate = sampleRate;
@@ -26,6 +31,11 @@ export class ChannelStrip {
     this.sendInputs = [];
     this.peakLevel = 0;
     this.rmsLevel = 0;
+
+    // Pre-allocate work buffers
+    this.workBufferL = new Float32Array(blockSize);
+    this.workBufferR = new Float32Array(blockSize);
+    this.tempBuffer = new Float32Array(blockSize);
   }
 
   /**
@@ -69,40 +79,47 @@ export class ChannelStrip {
   }
 
   /**
-   * Apply gain to buffer
+   * Apply gain to buffer - Optimized (in-place when possible)
    */
   private applyGain(buffer: AudioBuffer): AudioBuffer {
-    const output: AudioBuffer = {
-      samples: buffer.samples.map((channel) => {
-        const out = new Float32Array(channel.length);
-        for (let i = 0; i < channel.length; i++) {
-          out[i] = channel[i] * this.config.gain;
-        }
-        return out;
-      }),
-      channels: buffer.channels,
-      sampleRate: buffer.sampleRate,
-      blockSize: buffer.blockSize,
-    };
-    return output;
+    const gain = this.config.gain;
+
+    // Optimize for gain = 1.0 (no-op)
+    if (gain === 1.0) {
+      return buffer;
+    }
+
+    // In-place gain application (reuse input buffers)
+    for (const channel of buffer.samples) {
+      for (let i = 0; i < channel.length; i++) {
+        channel[i] *= gain;
+      }
+    }
+
+    return buffer;
   }
 
   /**
-   * Apply pan (convert mono to stereo or adjust stereo)
+   * Apply pan (convert mono to stereo or adjust stereo) - Optimized
    */
   private applyPan(buffer: AudioBuffer): AudioBuffer {
     const pan = this.config.pan; // -1 (left) to +1 (right)
     const leftGain = Math.cos((pan + 1) * Math.PI / 4);
     const rightGain = Math.sin((pan + 1) * Math.PI / 4);
+    const blockSize = buffer.blockSize;
+
+    // Use pre-allocated buffers
+    const left = this.workBufferL;
+    const right = this.workBufferR;
 
     if (buffer.channels === 1) {
-      // Mono to stereo with pan
-      const left = new Float32Array(buffer.blockSize);
-      const right = new Float32Array(buffer.blockSize);
+      // Mono to stereo with pan (cache input reference)
+      const input = buffer.samples[0];
 
-      for (let i = 0; i < buffer.blockSize; i++) {
-        left[i] = buffer.samples[0][i] * leftGain;
-        right[i] = buffer.samples[0][i] * rightGain;
+      for (let i = 0; i < blockSize; i++) {
+        const sample = input[i];
+        left[i] = sample * leftGain;
+        right[i] = sample * rightGain;
       }
 
       return {
@@ -112,13 +129,13 @@ export class ChannelStrip {
         blockSize: buffer.blockSize,
       };
     } else if (buffer.channels === 2) {
-      // Stereo pan adjustment
-      const left = new Float32Array(buffer.blockSize);
-      const right = new Float32Array(buffer.blockSize);
+      // Stereo pan adjustment (cache input references)
+      const inputL = buffer.samples[0];
+      const inputR = buffer.samples[1];
 
-      for (let i = 0; i < buffer.blockSize; i++) {
-        left[i] = buffer.samples[0][i] * leftGain;
-        right[i] = buffer.samples[1][i] * rightGain;
+      for (let i = 0; i < blockSize; i++) {
+        left[i] = inputL[i] * leftGain;
+        right[i] = inputR[i] * rightGain;
       }
 
       return {
