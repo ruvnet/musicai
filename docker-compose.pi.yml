@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  musicai:
+    build:
+      context: .
+      dockerfile: Dockerfile.pi
+      args:
+        NODE_ENV: production
+
+    container_name: musicai
+    hostname: musicai
+
+    restart: unless-stopped
+
+    # Audio device access
+    devices:
+      - /dev/snd:/dev/snd
+
+    # Ports (for future HTTP API)
+    ports:
+      - "3000:3000"
+
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=512
+      - TZ=America/New_York
+
+    # Volumes for persistent data
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      # Audio configuration (optional)
+      # - /etc/asound.conf:/etc/asound.conf:ro
+
+    # Resource limits (adjust based on your Pi's RAM)
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 1G
+        reservations:
+          cpus: '1.0'
+          memory: 256M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network mode (host for better audio performance)
+    # network_mode: host  # Uncomment if needed
+
+# Named volumes
+volumes:
+  data:
+    driver: local
+  logs:
+    driver: local
+
+# Networks (if not using host mode)
+networks:
+  default:
+    driver: bridge
